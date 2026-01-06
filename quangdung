@@ -1,0 +1,139 @@
+-- [[ QuangDungHub - SUPREME EDITION (Farm + PvP + Chest + Aimbot) ]] --
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("QuangDungHub | Supreme Edition", "DarkTheme")
+
+-- Configs
+_G.AutoFarm = false
+_G.Aimbot = false
+_G.AutoRun = false
+_G.QuySat = false
+_G.AutoChest = false
+
+-- [[ HÀM HỖ TRỢ HỆ THỐNG ]] --
+local function getNearestPlayer()
+    local closestDist = math.huge
+    local target = nil
+    for _, v in pairs(game.Players:GetChildren()) do
+        if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character.Humanoid.Health > 0 then
+            local dist = (v.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                target = v
+            end
+        end
+    end
+    return target
+end
+
+-- [[ TAB 1: CÀY LEVEL & NHẶT RƯƠNG ]] --
+local Tab1 = Window:NewTab("Auto Farm & Items")
+local FarmSection = Tab1:NewSection("Cày Cuốc")
+
+FarmSection:NewToggle("Auto Farm Level", "Cày quái siêu tốc", function(state)
+    _G.AutoFarm = state
+    spawn(function()
+        while _G.AutoFarm do
+            wait(0.1)
+            pcall(function()
+                for _, mob in pairs(game.Workspace.Enemies:GetChildren()) do
+                    if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and _G.AutoFarm then
+                        repeat
+                            wait()
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                            game:GetService("VirtualUser"):CaptureController()
+                            game:GetService("VirtualUser"):ClickButton1(Vector2.new(851, 158))
+                        until not _G.AutoFarm or not mob.Parent or mob.Humanoid.Health <= 0
+                    end
+                end
+            end)
+        end
+    end)
+end)
+
+FarmSection:NewToggle("Auto Nhặt Rương", "Tự động bay đi lấy tiền", function(state)
+    _G.AutoChest = state
+    spawn(function()
+        while _G.AutoChest do
+            wait()
+            for _, v in pairs(game.Workspace:GetChildren()) do
+                if v.Name:find("Chest") and v:IsA("Part") and _G.AutoChest then
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.CFrame
+                    wait(0.2)
+                end
+            end
+        end
+    end)
+end)
+
+-- [[ TAB 2: ĐẤU TRƯỜNG PVP (AIMBOT + QUỶ SÁT) ]] --
+local Tab2 = Window:NewTab("PvP & Quỷ Sát")
+local PvPSection = Tab2:NewSection("Tính Năng PvP")
+
+-- AIMBOT GHIM TÂM (Lock On)
+PvPSection:NewToggle("Aimbot Ghim Tâm", "Khóa mục tiêu vào người chơi gần nhất", function(state)
+    _G.Aimbot = state
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if _G.Aimbot then
+            local target = getNearestPlayer()
+            if target and target.Character then
+                local cam = workspace.CurrentCamera
+                -- Tính toán mượt để khóa camera vào đầu đối thủ
+                cam.CFrame = CFrame.new(cam.CFrame.Position, target.Character.HumanoidRootPart.Position)
+            end
+        end
+    end)
+end)
+
+-- CHẾ ĐỘ QUỶ SÁT (Demon Mode)
+PvPSection:NewToggle("BẬT QUỶ SÁT", "Auto Combo + Teleport PvP", function(state)
+    _G.QuySat = state
+    if state then
+        _G.AutoFarm = false -- Ưu tiên PvP
+        _G.AutoChest = false
+        spawn(function()
+            while _G.QuySat do
+                wait()
+                local target = getNearestPlayer()
+                if target and target.Character then
+                    -- Luôn dính chặt sau lưng đối thủ
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                    
+                    -- Combo xả chiêu (Z, X, C, V)
+                    local vim = game:GetService("VirtualInputManager")
+                    for _, key in pairs({"Z", "X", "C", "V"}) do
+                        if not _G.QuySat then break end
+                        vim:SendKeyEvent(true, key, false, game)
+                        wait(0.1)
+                        vim:SendKeyEvent(false, key, false, game)
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- [[ TAB 3: TIỆN ÍCH AN TOÀN ]] --
+local Tab3 = Window:NewTab("Hệ Thống")
+local SafeSection = Tab3:NewSection("Anti-Ban & Escape")
+
+SafeSection:NewToggle("Auto Chạy (Dưới 3000 máu)", "Thoát thân khi sắp chết", function(state)
+    _G.AutoRun = state
+    spawn(function()
+        while _G.AutoRun do
+            wait(0.5)
+            if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character.Humanoid.Health < 3000 then
+                -- Bay lên cực cao để tránh bị combo
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 2000, 0)
+                wait(8)
+            end
+        end
+    end)
+end)
+
+SafeSection:NewButton("Anti-AFK", "Treo máy không lo bị kick", function()
+    game:GetService("Players").LocalPlayer.Idled:Connect(function()
+        game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        wait(1)
+        game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end)
+end)
