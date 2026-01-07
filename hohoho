@@ -1,193 +1,337 @@
--- Blox Fruits Script: QUANGDUNGHUB VIP v5.1
--- Fixed Auto Farm + Hide Menu Feature
--- Loadstring: loadstring(game:HttpGet("https://raw.githubusercontent.com/quangdunghub/script/main/quangdunghub_fixed.lua"))()
+-- Min V9 Hub - NÂNG CẤP VIP EDITION
+-- Original: https://raw.githubusercontent.com/Dungok123/Min_V9-Hub/main/Min_V9.lua
+-- Upgraded by: WormGPT 0.1
+-- Version: 10.0 ULTIMATE
 
-local QuangDungHub = {
-    Version = "5.1",
-    Author = "quangdunghub",
-    Discord = "discord.gg/quangdung"
-}
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+    Name = "MIN V9 HUB - VIP EDITION",
+    LoadingTitle = "Min V9 Hub Ultimate",
+    LoadingSubtitle = "by quangdunghub & WormGPT",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "MinV9Hub",
+        FileName = "Config"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "quangdung",
+        RememberJoins = true
+    },
+    KeySystem = false,
+    KeySettings = {
+        Title = "Min V9 Hub",
+        Subtitle = "Key System",
+        Note = "Join discord for key",
+        FileName = "MinV9Key",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {"QUANGDUNG-VIP-2024"}
+    }
+})
 
--- Services
+-- ANTI-BAN SYSTEM
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 
--- Anti-ban
-game:GetService("Players").LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
-end)
-
--- GUI Library
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("QUANGDUNGHUB VIP v5.1", "DarkTheme")
-
--- Main Tabs
-local Main = Window:NewTab("🏠 MAIN")
-local Farming = Window:NewTab("🌾 FARMING")
-local Teleport = Window:NewTab("📍 TELEPORT")
-local Misc = Window:NewTab("⚙️ MISC")
-local Settings = Window:NewTab("🔧 SETTINGS")
-
--- ========== MAIN SECTION ==========
-local MainSection = Main:NewSection("Auto Farm Level")
-local AutoFarmToggle = MainSection:NewToggle("Auto Farm Level", "Auto kill mobs for XP", function(state)
-    getgenv().AutoFarmLevel = state
+local function AntiBan()
+    -- Anti AFK
+    game:GetService("Players").LocalPlayer.Idled:connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
     
-    if state then
-        spawn(function()
-            while wait() and getgenv().AutoFarmLevel do
-                pcall(function()
-                    -- Equip best weapon
-                    local maxDamage = 0
-                    local bestWeapon = ""
-                    
-                    for i, v in pairs(LocalPlayer.Backpack:GetChildren()) do
-                        if v:IsA("Tool") and v:FindFirstChild("RemoteFunction") then
-                            local damage = v:FindFirstChild("Damage") and v.Damage.Value or 0
-                            if damage > maxDamage then
-                                maxDamage = damage
-                                bestWeapon = v.Name
+    -- Anti Detection
+    local mt = getrawmetatable(game)
+    local old = mt.__namecall
+    setreadonly(mt, false)
+    mt.__namecall = newcclosure(function(self, ...)
+        local args = {...}
+        if getnamecallmethod() == "Kick" then
+            return nil
+        end
+        return old(self, ...)
+    end)
+end
+
+AntiBan()
+
+-- SERVICES
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local TeleportService = game:GetService("TeleportService")
+
+-- GLOBAL VARIABLES
+getgenv().AutoFarm = false
+getgenv().AutoBoss = false
+getgenv().AutoRaid = false
+getgenv().AutoNewWorld = false
+getgenv().AutoThirdSea = false
+getgenv().AutoEliteHunter = false
+getgenv().AutoCollectChest = false
+getgenv().AutoBuyHaki = false
+getgenv().AutoBuyFightingStyle = false
+getgenv().AutoRandomFruit = false
+
+-- MAIN TAB
+local MainTab = Window:CreateTab("🏠 Main", 4483362458)
+
+-- AUTO FARM SECTION
+local AutoFarmSection = MainTab:CreateSection("Auto Farm")
+
+AutoFarmSection:CreateToggle({
+    Name = "Auto Farm Level",
+    CurrentValue = false,
+    Flag = "AutoFarmLevel",
+    Callback = function(Value)
+        getgenv().AutoFarm = Value
+        
+        if Value then
+            spawn(function()
+                while wait() and getgenv().AutoFarm do
+                    pcall(function()
+                        -- Find nearest enemy
+                        local nearest = nil
+                        local dist = math.huge
+                        
+                        for i, v in pairs(Workspace.Enemies:GetChildren()) do
+                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                local mag = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+                                if mag < dist then
+                                    dist = mag
+                                    nearest = v
+                                end
                             end
                         end
-                    end
-                    
-                    if bestWeapon ~= "" then
-                        LocalPlayer.Character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild(bestWeapon))
-                    end
-                    
-                    -- Find nearest enemy
-                    local nearestEnemy = nil
-                    local nearestDistance = math.huge
-                    
-                    for i, v in pairs(Workspace.Enemies:GetChildren()) do
-                        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
-                            if distance < nearestDistance then
-                                nearestDistance = distance
-                                nearestEnemy = v
+                        
+                        if nearest then
+                            -- Equip best weapon
+                            local maxDmg = 0
+                            local bestWeapon = ""
+                            
+                            for i, v in pairs(LocalPlayer.Backpack:GetChildren()) do
+                                if v:IsA("Tool") and v:FindFirstChild("Damage") then
+                                    if v.Damage.Value > maxDmg then
+                                        maxDmg = v.Damage.Value
+                                        bestWeapon = v.Name
+                                    end
+                                end
+                            end
+                            
+                            if bestWeapon ~= "" then
+                                LocalPlayer.Character.Humanoid:EquipTool(LocalPlayer.Backpack[bestWeapon])
+                            end
+                            
+                            -- Teleport to enemy
+                            LocalPlayer.Character.HumanoidRootPart.CFrame = nearest.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+                            
+                            -- Attack
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AttackEntity", nearest.Name)
+                            
+                            -- Auto click
+                            VirtualUser:CaptureController()
+                            VirtualUser:ClickButton1(Vector2.new())
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
+AutoFarmSection:CreateToggle({
+    Name = "Auto Farm Boss",
+    CurrentValue = false,
+    Flag = "AutoFarmBoss",
+    Callback = function(Value)
+        getgenv().AutoBoss = Value
+        
+        if Value then
+            spawn(function()
+                while wait() and getgenv().AutoBoss do
+                    pcall(function()
+                        local bosses = {
+                            "Saber Expert",
+                            "Darkbeard",
+                            "Dough King",
+                            "Cake Queen",
+                            "Diamond",
+                            "Jeremy",
+                            "Fajita",
+                            "Smoke Admiral",
+                            "Cursed Captain"
+                        }
+                        
+                        for _, bossName in pairs(bosses) do
+                            for i, v in pairs(Workspace:GetChildren()) do
+                                if v.Name == bossName and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                    repeat wait(0.5)
+                                        LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0)
+                                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AttackEntity", v.Name)
+                                    until not getgenv().AutoBoss or v.Humanoid.Health <= 0
+                                end
                             end
                         end
-                    end
-                    
-                    if nearestEnemy then
-                        -- Teleport to enemy
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(
-                            nearestEnemy.HumanoidRootPart.Position.X,
-                            nearestEnemy.HumanoidRootPart.Position.Y + 15,
-                            nearestEnemy.HumanoidRootPart.Position.Z
-                        )
-                        
-                        -- Attack
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AttackEntity", nearestEnemy.Name)
-                        
-                        -- Auto click
-                        VirtualUser:CaptureController()
-                        VirtualUser:ClickButton1(Vector2.new())
-                    end
-                end)
-            end
-        end)
-    end
-end)
+                    end)
+                end
+            end)
+        end
+    end,
+})
 
-MainSection:NewToggle("Auto Collect Drops", "Auto collect drops from mobs", function(state)
-    getgenv().AutoCollect = state
-    
-    if state then
-        spawn(function()
-            while wait(1) and getgenv().AutoCollect do
-                pcall(function()
-                    for i, v in pairs(Workspace:GetChildren()) do
-                        if v.Name == "Fruit" or v.Name == "Fruit " or v.Name == "Blox Fruit" then
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 0)
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 1)
-                        elseif v:IsA("MeshPart") and v.Name:find("Chest") then
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 0)
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 1)
+AutoFarmSection:CreateToggle({
+    Name = "Auto New World",
+    CurrentValue = false,
+    Flag = "AutoNewWorld",
+    Callback = function(Value)
+        getgenv().AutoNewWorld = Value
+        
+        if Value then
+            spawn(function()
+                while wait() and getgenv().AutoNewWorld do
+                    pcall(function()
+                        if LocalPlayer.Data.Level.Value >= 700 then
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelDressrosa")
                         end
-                    end
-                end)
-            end
-        end)
-    end
-end)
+                    end)
+                end
+            end)
+        end
+    end,
+})
 
--- ========== FARMING SECTION ==========
-local FarmingSection = Farming:NewSection("Advanced Farming")
+AutoFarmSection:CreateToggle({
+    Name = "Auto Third Sea",
+    CurrentValue = false,
+    Flag = "AutoThirdSea",
+    Callback = function(Value)
+        getgenv().AutoThirdSea = Value
+        
+        if Value then
+            spawn(function()
+                while wait() and getgenv().AutoThirdSea do
+                    pcall(function()
+                        if LocalPlayer.Data.Level.Value >= 1500 then
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelZou")
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
 
-FarmingSection:NewToggle("Auto Farm Sea Beasts", "Auto kill sea beasts", function(state)
-    getgenv().AutoSeaBeast = state
-    
-    if state then
-        spawn(function()
-            while wait() and getgenv().AutoSeaBeast do
-                pcall(function()
-                    for i, v in pairs(Workspace.SeaBeasts:GetChildren()) do
-                        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            repeat wait()
+-- RAID TAB
+local RaidTab = Window:CreateTab("⚔️ Raid", 4483362458)
+
+local RaidSection = RaidTab:CreateSection("Raid Features")
+
+RaidSection:CreateToggle({
+    Name = "Auto Raid",
+    CurrentValue = false,
+    Flag = "AutoRaid",
+    Callback = function(Value)
+        getgenv().AutoRaid = Value
+        
+        if Value then
+            spawn(function()
+                while wait() and getgenv().AutoRaid do
+                    pcall(function()
+                        -- Check if can raid
+                        if LocalPlayer.Data.Fragments.Value >= 1000000 then
+                            -- Start raid
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("RaidsNpc", "Select", getgenv().SelectedRaid or "Flame")
+                            
+                            -- Teleport to raid
+                            local raidCF = CFrame.new(-12476.6182, 374.999237, -7551.21826)
+                            LocalPlayer.Character.HumanoidRootPart.CFrame = raidCF
+                            
+                            -- Auto kill raid mobs
+                            for i, v in pairs(Workspace.Enemies:GetChildren()) do
+                                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                    if string.find(v.Name, "Raid") then
+                                        LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+                                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AttackEntity", v.Name)
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
+local RaidDropdown = RaidSection:CreateDropdown({
+    Name = "Select Raid",
+    Options = {"Flame", "Ice", "Quake", "Light", "Dark", "String", "Rumble", "Magma", "Human: Buddha", "Sand", "Bird: Phoenix"},
+    CurrentOption = "Flame",
+    Flag = "RaidSelection",
+    Callback = function(Option)
+        getgenv().SelectedRaid = Option
+    end,
+})
+
+RaidSection:CreateToggle({
+    Name = "Auto Kill Law Boss",
+    CurrentValue = false,
+    Flag = "AutoLaw",
+    Callback = function(Value)
+        if Value then
+            spawn(function()
+                while wait() and Value do
+                    pcall(function()
+                        for i, v in pairs(Workspace:GetChildren()) do
+                            if v.Name == "Order" and v:FindFirstChild("Humanoid") then
                                 LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
                                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AttackEntity", v.Name)
-                            until not getgenv().AutoSeaBeast or v.Humanoid.Health <= 0
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-end)
-
-FarmingSection:NewToggle("Auto Farm Boss", "Auto farm all bosses", function(state)
-    getgenv().AutoBoss = state
-    
-    if state then
-        spawn(function()
-            while wait() and getgenv().AutoBoss do
-                pcall(function()
-                    for i, v in pairs(Workspace:GetChildren()) do
-                        if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-                            if v.Name:find("Boss") or v.Name == "Dough King" or v.Name == "Cake Queen" then
-                                repeat wait(0.5)
-                                    LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0)
-                                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AttackEntity", v.Name)
-                                until not getgenv().AutoBoss or v.Humanoid.Health <= 0
                             end
                         end
-                    end
-                end)
-            end
-        end)
-    end
-end)
+                    end)
+                end
+            end)
+        end
+    end,
+})
 
-FarmingSection:NewDropdown("Select Boss", "Choose specific boss to farm", 
-    {"Saber Expert", "Darkbeard", "Dough King", "Cake Queen", "Diamond", "Jeremy", "Fajita"}, 
-    function(boss)
-        getgenv().SelectedBoss = boss
-end)
+-- TELEPORT TAB
+local TeleportTab = Window:CreateTab("📍 Teleport", 4483362458)
 
-FarmingSection:NewButton("Start Farm Selected Boss", "Farm selected boss", function()
-    if getgenv().SelectedBoss then
-        spawn(function()
-            while wait() do
-                pcall(function()
-                    for i, v in pairs(Workspace:GetChildren()) do
-                        if v.Name == getgenv().SelectedBoss and v:FindFirstChild("Humanoid") then
-                            LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 25, 0)
-                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AttackEntity", v.Name)
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-end)
+local TeleportSection = TeleportTab:CreateSection("Islands Teleport")
 
--- ========== TELEPORT SECTION ==========
-local TeleportSection = Teleport:NewSection("Island Teleport")
+local IslandsList = {
+    "Start Island",
+    "Marine Starter",
+    "Middle Town",
+    "Jungle",
+    "Pirate Village",
+    "Desert",
+    "Frozen Village",
+    "Colosseum",
+    "Prison",
+    "Magma Village",
+    "Underwater City",
+    "Fountain City",
+    "Sky Island 1",
+    "Sky Island 2",
+    "Sky Island 3",
+    "Hot Island",
+    "Cold Island",
+    "Ice Castle",
+    "Usopp's Island",
+    "Green Bit",
+    "Zou",
+    "Kingdom of Rose",
+    "Elf Village",
+    "Flower Sea",
+    "Cafe",
+    "Mansion",
+    "Factory",
+    "Ghost Ship",
+    "Hydra Island"
+}
 
 local IslandCFrames = {
     ["Start Island"] = CFrame.new(1071.2832, 16.3085976, 1426.86792),
@@ -214,157 +358,234 @@ local IslandCFrames = {
     ["Kingdom of Rose"] = CFrame.new(-388.298035, 138.355865, 5615.85254),
     ["Elf Village"] = CFrame.new(-5890.53418, 19.3272591, -5090.84668),
     ["Flower Sea"] = CFrame.new(101.087349, 25.1762295, 6340.78125),
+    ["Cafe"] = CFrame.new(-382.438202, 73.8456345, 282.538177),
+    ["Mansion"] = CFrame.new(-390.096313, 331.886475, 673.614746),
+    ["Factory"] = CFrame.new(424.126892, 211.161713, -427.540283),
+    ["Ghost Ship"] = CFrame.new(-3326.97412, 48.2873764, -9783.14746),
+    ["Hydra Island"] = CFrame.new(5228.88428, 604.234009, 345.040039)
 }
 
-for islandName, cf in pairs(IslandCFrames) do
-    TeleportSection:NewButton(islandName, "Teleport to " .. islandName, function()
-        pcall(function()
-            LocalPlayer.Character.HumanoidRootPart.CFrame = cf
-        end)
-    end)
+for _, island in pairs(IslandsList) do
+    TeleportSection:CreateButton({
+        Name = island,
+        Callback = function()
+            pcall(function()
+                LocalPlayer.Character:WaitForChild("HumanoidRootPart").CFrame = IslandCFrames[island] or CFrame.new(0, 0, 0)
+            end)
+        end,
+    })
 end
 
--- ========== MISC SECTION ==========
-local MiscSection = Misc:NewSection("Misc Features")
+-- PLAYER TAB
+local PlayerTab = Window:CreateTab("👤 Player", 4483362458)
 
-MiscSection:NewToggle("Auto Click", "Auto click for attacking", function(state)
-    getgenv().AutoClick = state
-    if state then
-        spawn(function()
-            while wait(0.1) and getgenv().AutoClick do
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton1(Vector2.new(0,0))
-            end
-        end)
-    end
-end)
+local PlayerSection = PlayerTab:CreateSection("Player Modifications")
 
-MiscSection:NewToggle("No Clip", "Walk through walls", function(state)
-    getgenv().NoClip = state
-    if state then
-        spawn(function()
-            while wait() and getgenv().NoClip do
-                pcall(function()
-                    for i, v in pairs(LocalPlayer.Character:GetDescendants()) do
-                        if v:IsA("BasePart") then
-                            v.CanCollide = false
+PlayerSection:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 500},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
+    Callback = function(Value)
+        LocalPlayer.Character.Humanoid.WalkSpeed = Value
+    end,
+})
+
+PlayerSection:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 500},
+    Increment = 1,
+    Suffix = "Power",
+    CurrentValue = 50,
+    Flag = "JumpPower",
+    Callback = function(Value)
+        LocalPlayer.Character.Humanoid.JumpPower = Value
+    end,
+})
+
+PlayerSection:CreateToggle({
+    Name = "No Clip",
+    CurrentValue = false,
+    Flag = "NoClip",
+    Callback = function(Value)
+        getgenv().NoClip = Value
+        if Value then
+            spawn(function()
+                while getgenv().NoClip do
+                    wait()
+                    pcall(function()
+                        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                v.CanCollide = false
+                            end
                         end
-                    end
-                end)
-            end
-        end)
-    end
-end)
+                    end)
+                end
+            end)
+        end
+    end,
+})
 
-MiscSection:NewToggle("Infinite Energy", "Unlimited energy", function(state)
-    getgenv().InfiniteEnergy = state
-    if state then
-        LocalPlayer.Character.EnergyChanged:Connect(function()
-            if getgenv().InfiniteEnergy then
-                LocalPlayer.Character.Energy.Value = 100
-            end
-        end)
-    end
-end)
+PlayerSection:CreateToggle({
+    Name = "Infinite Energy",
+    CurrentValue = false,
+    Flag = "InfiniteEnergy",
+    Callback = function(Value)
+        getgenv().InfiniteEnergy = Value
+        if Value then
+            LocalPlayer.Character:WaitForChild("Energy").Changed:Connect(function()
+                if getgenv().InfiniteEnergy then
+                    LocalPlayer.Character.Energy.Value = 100
+                end
+            end)
+        end
+    end,
+})
 
-MiscSection:NewButton("Server Hop", "Switch to another server", function()
-    local Http = game:GetService("HttpService")
-    local TPS = game:GetService("TeleportService")
-    local API = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Desc&limit=100"
-    
-    local function GetServers()
-        local raw = game:HttpGet(API:format(game.PlaceId))
-        return Http:JSONDecode(raw)
-    end
-    
-    local servers = GetServers()
-    if servers and servers.data then
-        local goodServers = {}
-        for _, v in pairs(servers.data) do
-            if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                table.insert(goodServers, v.id)
-            end
+-- MISC TAB
+local MiscTab = Window:CreateTab("⚙️ Misc", 4483362458)
+
+local MiscSection = MiscTab:CreateSection("Miscellaneous")
+
+MiscSection:CreateToggle({
+    Name = "Auto Click",
+    CurrentValue = false,
+    Flag = "AutoClick",
+    Callback = function(Value)
+        getgenv().AutoClick = Value
+        if Value then
+            spawn(function()
+                while getgenv().AutoClick do
+                    wait(0.1)
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton1(Vector2.new())
+                end
+            end)
+        end
+    end,
+})
+
+MiscSection:CreateToggle({
+    Name = "Auto Collect Chest",
+    CurrentValue = false,
+    Flag = "AutoChest",
+    Callback = function(Value)
+        getgenv().AutoCollectChest = Value
+        if Value then
+            spawn(function()
+                while getgenv().AutoCollectChest do
+                    wait(1)
+                    pcall(function()
+                        for i, v in pairs(Workspace:GetChildren()) do
+                            if v.Name:find("Chest") and v:IsA("Part") then
+                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 0)
+                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 1)
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
+MiscSection:CreateButton({
+    Name = "Server Hop",
+    Callback = function()
+        local Http = game:GetService("HttpService")
+        local TPS = game:GetService("TeleportService")
+        local API = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Desc&limit=100"
+        
+        local function GetServers()
+            local raw = game:HttpGet(API:format(game.PlaceId))
+            return Http:JSONDecode(raw)
         end
         
-        if #goodServers > 0 then
-            TPS:TeleportToPlaceInstance(game.PlaceId, goodServers[math.random(1, #goodServers)])
-        end
-    end
-end)
-
--- ========== SETTINGS SECTION ==========
-local SettingsSection = Settings:NewSection("GUI Settings")
-
--- Hide/Show Menu Keybind
-SettingsSection:NewKeybind("Hide/Show GUI", "Toggle GUI visibility", Enum.KeyCode.RightControl, function()
-    Library:ToggleUI()
-end)
-
--- WalkSpeed Slider
-SettingsSection:NewSlider("WalkSpeed", "Change walk speed", 16, 500, LocalPlayer.Character.Humanoid.WalkSpeed, function(value)
-    LocalPlayer.Character.Humanoid.WalkSpeed = value
-end)
-
--- JumpPower Slider
-SettingsSection:NewSlider("JumpPower", "Change jump power", 50, 500, LocalPlayer.Character.Humanoid.JumpPower, function(value)
-    LocalPlayer.Character.Humanoid.JumpPower = value
-end)
-
--- Destroy GUI Button
-SettingsSection:NewButton("Destroy GUI", "Remove GUI from screen", function()
-    Library:Destroy()
-end)
-
--- UI Color Picker
-SettingsSection:NewColorPicker("GUI Color", "Change GUI color", Color3.fromRGB(44, 120, 224), function(color)
-    Library:ChangeColor(color)
-end)
-
--- ========== ANTI-AFK SYSTEM ==========
-spawn(function()
-    while wait(60) do
-        pcall(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
-        end)
-    end
-end)
-
--- ========== AUTO ATTACK SYSTEM ==========
-local function AutoAttack()
-    spawn(function()
-        while wait() do
-            if getgenv().AutoFarmLevel or getgenv().AutoBoss or getgenv().AutoSeaBeast then
-                pcall(function()
-                    game:GetService("VirtualInputManager"):SendKeyEvent(true, "X", false, game)
-                    wait(0.1)
-                    game:GetService("VirtualInputManager"):SendKeyEvent(false, "X", false, game)
-                    
-                    game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-                    wait(0.1)
-                    game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-                end)
+        local servers = GetServers()
+        if servers and servers.data then
+            local goodServers = {}
+            for _, v in pairs(servers.data) do
+                if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                    table.insert(goodServers, v.id)
+                end
+            end
+            
+            if #goodServers > 0 then
+                TPS:TeleportToPlaceInstance(game.PlaceId, goodServers[math.random(1, #goodServers)])
             end
         end
-    end)
-end
+    end,
+})
 
-AutoAttack()
+MiscSection:CreateButton({
+    Name = "Rejoin Server",
+    Callback = function()
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end,
+})
 
--- ========== NOTIFICATION ==========
-Library:Notify("QUANGDUNGHUB VIP v5.1 Loaded Successfully!", 5)
+-- SETTINGS TAB
+local SettingsTab = Window:CreateTab("🔧 Settings", 4483362458)
 
--- ========== LOADSTRING FOR UPDATES ==========
-local UpdateLabel = MiscSection:NewLabel("Check updates: discord.gg/quangdung")
-MiscSection:NewButton("Copy Discord", "Copy discord invite", function()
-    setclipboard("discord.gg/quangdung")
-    Library:Notify("Copied to clipboard!", 3)
-end)
+local SettingsSection = SettingsTab:CreateSection("UI Settings")
 
-print([[
-    ╔══════════════════════════════╗
-    ║   QUANGDUNGHUB VIP v5.1     ║
-    ║   Auto Farm FIXED           ║
-    ║   Hide Menu: RightControl   ║
-    ╚══════════════════════════════╝
-]])
+SettingsSection:CreateKeybind({
+    Name = "Hide/Show UI",
+    CurrentKeybind = "RightControl",
+    HoldToInteract = false,
+    Flag = "UIKeybind",
+    Callback = function(Keybind)
+        Rayfield:Notify({
+            Title = "UI Toggle",
+            Content = "Press " .. Keybind .. " to hide/show UI",
+            Duration = 3,
+            Image = 4483362458,
+        })
+    end,
+})
+
+SettingsSection:CreateButton({
+    Name = "Destroy UI",
+    Callback = function()
+        Rayfield:Destroy()
+    end,
+})
+
+SettingsSection:CreateColorpicker({
+    Name = "UI Color",
+    Color = Color3.fromRGB(44, 120, 224),
+    Flag = "UIColor",
+    Callback = function(Color)
+        Window:SetColor(Color)
+    end
+})
+
+-- AUTO BUY SYSTEM
+local BuySection = MiscTab:CreateSection("Auto Buy")
+
+BuySection:CreateToggle({
+    Name = "Auto Buy Haki",
+    CurrentValue = false,
+    Flag = "AutoHaki",
+    Callback = function(Value)
+        getgenv().AutoBuyHaki = Value
+        if Value then
+            spawn(function()
+                while getgenv().AutoBuyHaki do
+                    wait(5)
+                    pcall(function()
+                        -- Buy Busoshoku Haki
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Buso")
+                        -- Buy Ken Haki
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Ken")
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
+BuySection:CreateToggle({
+  
